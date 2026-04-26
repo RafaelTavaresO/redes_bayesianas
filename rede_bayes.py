@@ -1,6 +1,26 @@
+from itertools import product
 from pgmpy.factors.discrete import TabularCPD
 import pandas as pd
 import numpy as np
+
+def ranking_cenarios(cpd, estado_alvo):
+    estados = cpd.state_names[cpd.variable]
+    idx = estados.index(estado_alvo)
+
+    probs = cpd.values[idx].flatten()
+    pais = cpd.get_evidence()[::-1]
+
+    resultados = []
+
+    for i, p in enumerate(probs):
+        indices = np.unravel_index(i, cpd.cardinality[1:])
+        evidencias = {
+            var: cpd.state_names[var][j]
+            for var, j in zip(pais, indices)
+        }
+        resultados.append((evidencias, p))
+
+    return sorted(resultados, key=lambda x: x[1], reverse=True)
 
 def melhor_cenario_cpd(cpd, estado_alvo):
     # índice do estado alvo (ex: "Yes")
@@ -27,6 +47,25 @@ def melhor_cenario_cpd(cpd, estado_alvo):
 
     return evidencias, max_valor
 
+def pior_cenario(cpd, estado_alvo):
+    estados = cpd.state_names[cpd.variable]
+    idx_yes = estados.index(estado_alvo)
+
+    probs = cpd.values[idx_yes].flatten()
+    
+    idx_min = np.argmin(probs)
+    min_val = probs[idx_min]
+
+    pais = cpd.get_evidence()
+    indices = np.unravel_index(idx_min, cpd.cardinality[1:])
+
+    evidencias = {
+        var: cpd.state_names[var][i]
+        for var, i in zip(pais, indices)
+    }
+
+    return evidencias, min_val
+
 def gerar_cpd(df, var, pais):
 
     # Gera uma crosstab que correlaciona o nó Filho com os nós Pais
@@ -41,7 +80,14 @@ def gerar_cpd(df, var, pais):
 
     # Armazena os estados que os nós Pais pode assumir
     estados_pais = [sorted(df[p].dropna().unique().tolist()) for p in pais]
+    
+    multi_index = pd.MultiIndex.from_tuples(
+        list(product(*estados_pais)),
+        names=pais)
+    
+    tabela = tabela.reindex(multi_index, fill_value=0)
 
+    # garantir ordem correta das colunas
     tabela = tabela[estados_var]
     valores = tabela.T.values
 
@@ -62,16 +108,40 @@ df_preparado = pd.read_csv('dataset_chuva_preparado.csv')
 # Gerando CPD's utilizando o df, o nó Filho e uma lista de nós Pais
 cpd_pressure = gerar_cpd(df_preparado, 'Pressure3pm', ['Location'])
 
-cpd_windDir = gerar_cpd(df_preparado, 'WindDir3pm',['Location'])
+cpd_rainfall = gerar_cpd(df_preparado, 'Rainfall', ['RainToday', 'Location'])
 
-cpd_humidity = gerar_cpd(df_preparado, 'Humidity3pm', ['Pressure3pm'])
+cpd_humidity = gerar_cpd(df_preparado, 'Humidity3pm', ['Pressure3pm', 'RainToday'])
 
 cpd_cloud = gerar_cpd(df_preparado, 'Cloud3pm', ['Pressure3pm', 'Humidity3pm'])
 
-cpd_rainTomorrow = gerar_cpd(df_preparado, 'RainTomorrow', ['Cloud3pm', 'Humidity3pm', 'WindDir3pm', 'RainToday'])
+cpd_rainTomorrow = gerar_cpd(df_preparado, 'RainTomorrow', ['Cloud3pm', 'Humidity3pm', 'Pressure3pm', 'Rainfall', 'RainToday'])
 
 #print(cpd_rainTomorrow)
 
-evidencias, max = melhor_cenario_cpd(cpd_pressure, 'Normal')
 
-print(evidencias, max)
+evidencia, max = melhor_cenario_cpd(cpd_rainTomorrow, 'Yes')
+
+resultado = ranking_cenarios(cpd_rainTomorrow, 'Yes')
+
+evidencia_2, min = pior_cenario(cpd_rainTomorrow, 'Yes')
+
+
+print(evidencia, max)
+
+print('\n')
+
+i=0
+for r in resultado[:5]:
+    print("\n")
+    print(r)
+
+print('\n')
+
+print(evidencia_2, min)
+
+df_filtrado = df_preparado[
+    (df_preparado['Rainfall'] == 'Chuva Leve') & 
+    (df_preparado['RainToday'] == 'No')
+]
+
+print(df_filtrado)
