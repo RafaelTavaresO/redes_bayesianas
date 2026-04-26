@@ -1,7 +1,16 @@
+from graphviz import Digraph
 from itertools import product
 from pgmpy.factors.discrete import TabularCPD
 import pandas as pd
 import numpy as np
+
+def plotar_rede_graphviz(edges):
+    dot = Digraph()
+
+    for pai, filho in edges:
+        dot.edge(pai, filho)
+
+    dot.render("rede_bayesiana", format="png", view=True)
 
 def ranking_cenarios(cpd, estado_alvo):
     estados = cpd.state_names[cpd.variable]
@@ -52,7 +61,7 @@ def pior_cenario(cpd, estado_alvo):
     idx_yes = estados.index(estado_alvo)
 
     probs = cpd.values[idx_yes].flatten()
-    
+
     idx_min = np.argmin(probs)
     min_val = probs[idx_min]
 
@@ -108,13 +117,13 @@ df_preparado = pd.read_csv('dataset_chuva_preparado.csv')
 # Gerando CPD's utilizando o df, o nó Filho e uma lista de nós Pais
 cpd_pressure = gerar_cpd(df_preparado, 'Pressure3pm', ['Location'])
 
-cpd_rainfall = gerar_cpd(df_preparado, 'Rainfall', ['RainToday', 'Location'])
+cpd_temp = gerar_cpd(df_preparado, 'Temp3pm', ['Location'])
 
-cpd_humidity = gerar_cpd(df_preparado, 'Humidity3pm', ['Pressure3pm', 'RainToday'])
+cpd_humidity = gerar_cpd(df_preparado, 'Humidity3pm', ['Pressure3pm', 'Temp3pm'])
 
 cpd_cloud = gerar_cpd(df_preparado, 'Cloud3pm', ['Pressure3pm', 'Humidity3pm'])
 
-cpd_rainTomorrow = gerar_cpd(df_preparado, 'RainTomorrow', ['Cloud3pm', 'Humidity3pm', 'Pressure3pm', 'Rainfall', 'RainToday'])
+cpd_rainTomorrow = gerar_cpd(df_preparado, 'RainTomorrow', ['Rainfall', 'Cloud3pm', 'Humidity3pm'])
 
 #print(cpd_rainTomorrow)
 
@@ -139,9 +148,16 @@ print('\n')
 
 print(evidencia_2, min)
 
-df_filtrado = df_preparado[
-    (df_preparado['Rainfall'] == 'Chuva Leve') & 
-    (df_preparado['RainToday'] == 'No')
+edges = [
+    ('Location', 'Pressure3pm'),
+    ('Location', 'Temp3pm'),
+    ('Temp3pm', 'Humidity3pm'),
+    ('Pressure3pm', 'Humidity3pm'),
+    ('Pressure3pm', 'Cloud3pm'),
+    ('Humidity3pm', 'Cloud3pm'),
+    ('Humidity3pm', 'RainTomorrow'),
+    ('Cloud3pm', 'RainTomorrow'),
+    ('Rainfall', 'RainTomorrow')
 ]
 
-print(df_filtrado)
+plotar_rede_graphviz(edges)
