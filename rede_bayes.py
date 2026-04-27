@@ -95,13 +95,6 @@ def gerar_cpd(df, var, pais):
         normalize='index'
     )
 
-    valores = tabela.T.values
-
-
-    tabela.to_csv("acs.csv")
-
-    print(tabela.sum(axis=0))
-
     # Armazena os estados que os nós Pais pode assumir
     estados_pais = [sorted(df[p].dropna().unique().tolist()) for p in pais]
 
@@ -111,13 +104,9 @@ def gerar_cpd(df, var, pais):
             names=pais
             )
         
-        valores = tabela.T.values
-
         tabela = tabela.reindex(multi_index, fill_value=0)
     
-    #tabela = tabela.div(tabela.sum(axis=1), axis=0).fillna(0)
 
-    valores = tabela.T.values
 
     # detectar linhas inválidas
     soma = tabela.sum(axis=1)
@@ -128,19 +117,7 @@ def gerar_cpd(df, var, pais):
     # normalizar (segurança)
     tabela = tabela.div(tabela.sum(axis=1), axis=0)
 
-    #print(tabela.sum(axis=1))
-    print(tabela.sum(axis=0))
-
-    # garantir ordem correta das colunas
-    #tabela = tabela[estados_var]
-    #estados_var = list(tabela.columns)
-
-    print(tabela.sum(axis=1))
-
     valores = tabela.T.values
-
-    print("Shape:", valores.shape)
-    print("Soma colunas:", np.sum(valores, axis=0))
 
     # Cria um dicionário que conecta os nós Pais aos seus respectivos estados
     dicionario = dict(zip(pais, estados_pais))
