@@ -49,9 +49,9 @@ df_rede['Rainfall'] = pd.cut(
     bins=[-0.1, 1, 10, 50, 1000],
     labels=[
         'Sem Chuva',
-        'Preciptação Baixa',
-        'Preciptação Média',
-        'Preciptação Alta'
+        'Precipitação Baixa',
+        'Precipitação Média',
+        'Precipitação Alta'
     ]
 )
 

@@ -1,16 +1,8 @@
-from graphviz import Digraph
 from itertools import product
 from pgmpy.factors.discrete import TabularCPD
 import pandas as pd
 import numpy as np
 
-def plotar_rede_graphviz(edges):
-    dot = Digraph()
-
-    for pai, filho in edges:
-        dot.edge(pai, filho)
-
-    dot.render("rede_bayesiana", format="png", view=True)
 
 def ranking_cenarios(cpd, estado_alvo):
     estados = cpd.state_names[cpd.variable]
@@ -127,7 +119,6 @@ cpd_rainTomorrow = gerar_cpd(df_preparado, 'RainTomorrow', ['Rainfall', 'Cloud3p
 
 #print(cpd_rainTomorrow)
 
-
 evidencia, max = melhor_cenario_cpd(cpd_rainTomorrow, 'Yes')
 
 resultado = ranking_cenarios(cpd_rainTomorrow, 'Yes')
@@ -147,17 +138,3 @@ for r in resultado[:5]:
 print('\n')
 
 print(evidencia_2, min)
-
-edges = [
-    ('Location', 'Pressure3pm'),
-    ('Location', 'Temp3pm'),
-    ('Temp3pm', 'Humidity3pm'),
-    ('Pressure3pm', 'Humidity3pm'),
-    ('Pressure3pm', 'Cloud3pm'),
-    ('Humidity3pm', 'Cloud3pm'),
-    ('Humidity3pm', 'RainTomorrow'),
-    ('Cloud3pm', 'RainTomorrow'),
-    ('Rainfall', 'RainTomorrow')
-]
-
-plotar_rede_graphviz(edges)
